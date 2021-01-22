@@ -1,9 +1,11 @@
 from flask import Flask
-from charts import charts_api
+from APIs.charts import charts_api
+from APIs.song import song_api
 
 app = Flask(__name__)
 
 app.register_blueprint(charts_api, url_prefix="/charts")
+app.register_blueprint(song_api, url_prefix="/song")
 
 
 @app.route("/")
