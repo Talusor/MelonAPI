@@ -70,3 +70,60 @@ def Info():
             status=500,
             mimetype="application/json",
         )
+
+
+@song_api.route("/search", methods=["GET"])
+def Search():
+    try:
+        query = request.args.get("query")
+
+        res = requests.get(
+            constant.MELON_SEARCH_SONG.format(query),
+            headers=constant.MELON_HEADER,
+        )
+        soup = BeautifulSoup(res.text, "html.parser")
+        result = []
+        for item in soup.select("tbody tr"):
+            temp = {}
+            reItem = re.search(
+                r"'SONG','SO','(.*)','(\d+)'\)",
+                item.select_one("button.play")["onclick"],
+                re.MULTILINE,
+            )
+            temp["songId"] = reItem.group(2)
+            if not item.select_one("a.fc_gray"):
+                temp["title"] = (
+                    item.select_one("td.t_left").select_one("span:not(.odd_span)").text
+                )
+            else:
+                temp["title"] = item.select_one("a.fc_gray").text
+            temp["artist"] = item.select_one("div#artistName>span").text
+            if item.select_one("div#artistName a") != None:
+                reItem = re.search(
+                    r"goArtistDetail\('(\d+)'\)",
+                    item.select_one("div#artistName a")["href"],
+                    re.MULTILINE,
+                )
+                temp["artistId"] = reItem.group(1)
+            else:
+                temp["artistId"] = None
+            temp["album"] = item.select("td")[4].select_one("a.fc_mgray").text
+            reItem = re.search(
+                r"goAlbumDetail\('(\d+)'\)",
+                item.select("td")[4].select_one("a.fc_mgray")["href"],
+                re.MULTILINE,
+            )
+            temp["albumId"] = reItem.group(1)
+            result.append(temp)
+
+        return Response(
+            json.dumps({"count": len(result), "result": result}),
+            status=200,
+            mimetype="application/json",
+        )
+    except:
+        return Response(
+            json.dumps({"msg": "Internal error"}),
+            status=500,
+            mimetype="application/json",
+        )
