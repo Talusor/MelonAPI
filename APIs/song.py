@@ -76,7 +76,12 @@ def Info():
 def Search():
     try:
         query = request.args.get("query")
-
+        if query == "":
+            return Response(
+                json.dumps({"msg": "query is emtpy"}),
+                status=400,
+                mimetype="application/json",
+            )
         res = requests.get(
             constant.MELON_SEARCH_SONG.format(query),
             headers=constant.MELON_HEADER,
